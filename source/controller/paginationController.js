@@ -33,7 +33,7 @@ const findPaginationRecords =async (req, res) => {
         where: {
             City_Name:    
             {   
-              //[Op.like]: '%req.query.firstName%'    
+               
               [Op.or]: [   
                 { [Op.like]: `%${req.body.City_Name}%` },   
                 { [Op.like]: `${req.body.City_Name}%` },   
