@@ -30,10 +30,14 @@ const findPaginationRecords = async (req, res) => {
       offset: (page-1)* size,
       where: {
         City_Name: {
-            [Op.like]:req.body.name
-        }
-      }
-    })
+            [Op.or]: [
+                { [Op.like]: `%${req.body.City_Name}%` },   
+                { [Op.like]: `%${req.body.City_Name}` },    
+                { [Op.like]: `${req.body.City_Name}%`}    
+            ]    
+            }   
+          }
+        })
     res.status(200).json({
       status: appConst.status.success,
       response: resp,
