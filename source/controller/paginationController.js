@@ -27,7 +27,7 @@ const findPaginationRecords = async (req, res) => {
   try {
     const resp = await Zeological_parks.findAndCountAll({
       limit: size,
-      offset: page * size,
+      offset: (page-1)* size,
       where: {
         City_Name: {
             [Op.like]:req.body.name
