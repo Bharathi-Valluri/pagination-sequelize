@@ -1,5 +1,13 @@
-const pagination_controller =require('../controller/paginationController')
-const router =require('express').Router()
-router.post('/bulkRecordsGeneration',pagination_controller.PaginationBulkRecordsCreation)
-router.post('/getBulkRecords',pagination_controller.findPaginationRecords)
-module.exports =router
+const pagination_controller = require('../controller/paginationController')
+const router = require('express').Router()
+// router.post('/bulkRecordsGeneration',pagination_controller.PaginationBulkRecordsCreation)
+// router.post('/getBulkRecords',pagination_controller.findPaginationRecords)
+router.get('/getPark/:id', pagination_controller.getfromCache)
+router.get('/todos/:id', pagination_controller.getallrecords)
+router.post('/todos2', pagination_controller.insert)
+router.put('/todos3/:id', pagination_controller.updateOne)
+router.delete('/todos4/:id', pagination_controller.deleteOne)
+router.get('/todos1', pagination_controller.getAll)
+router.post('/todos5', pagination_controller.findMany)
+router.post('/todos6', pagination_controller.bulkInsert)
+module.exports = router
