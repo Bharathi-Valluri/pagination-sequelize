@@ -12,9 +12,13 @@ app.use(bodyParser.urlencoded({ extended: true }))
 app.use(bodyParser.json())
 app.use(cors())
 sequelize.sync()
+const redis = require('redis')
+const REDIS_PORT = process.env.REDIS_PORT || 6379
+const client = redis.createClient(REDIS_PORT, process.env.host || 'localhost')
+
 async function run () {
   try {
-    await sequelize.authenticate()
+    await client.connect()
     console.log('connected to the database')
     app.use('/', router)
     app.listen(process.env.PORT, () => {

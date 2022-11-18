@@ -3,13 +3,64 @@ const appConst = require('../router/constants')
 const Zeological_parks = require('../models/pagination')
 const fetch = require('node-fetch')
 const redis = require('redis')
+const axios = require('axios')
+const { response } = require('express')
+// const NodeRedis = require('node-redis')
 const REDIS_PORT = process.env.REDIS_PORT || 6379
 const client = redis.createClient(REDIS_PORT, process.env.host || 'localhost')
 client.connect()
+const PartialSearch = async (req, res) => {
+  try {
+    const resp = await Zeological_parks.findOne({})
+    $or: [{ City_Name: { $regex: req.params.key } }]
 
+    res.send(resp)
+  } catch (error) {
+    console.log(error.message)
+    res.status(500).json({
+      status: appConst.status.fail,
+      response: null,
+      message: 'failed'
+    })
+  }
+}
+const getOneRecord = async (req, res) => {
+  console.log('Connecting to the Redis')
+  console.log('body: ', req.body)
+  let id = req.body.id ? req.body.id : ''
+  let animal_name = req.body.animal_name ? req.body.animal_name : ''
+  let Zoo_Name = req.body.Zoo_Name ? req.body.Zoo_Name : ''
+  let City_Name = req.body.City_Name ? req.body.City_Name : ''
+  try {
+    let key = ``
+    key += id ? id : ''
+    key += animal_name ? animal_name : ''
+    key += Zoo_Name ? Zoo_Name : ''
+    key += City_Name ? City_Name : ''
+    console.log('Key: ', key)
+    let resp
+    const value = await client.get('6Ho')
+    console.log(value)
+    console.log('value1', value)
+    if (value) {
+      console.log('fetch from cache.')
+
+      res.send(JSON.parse(value))
+      console.log('value1', value)
+    } else {
+      console.log('fetch from DB.')
+      resp = await Zeological_parks.findAll({})
+      // await client.flushAll()
+      await client.set(setKey, JSON.stringify(resp), { EX: 30 })
+    }
+    res.status(200).json(resp)
+  } catch (error) {
+    console.log(error.message)
+  }
+}
 const getfromCache = async (req, res, next) => {
   try {
-    let key = 'todos' + req.params.id
+    let key = 'todos' + req.params.City_Name
     let resp
     const value = await client.get(key)
     if (value) {
@@ -23,7 +74,7 @@ const getfromCache = async (req, res, next) => {
 
       resp = await Zeological_parks.findOne({ where: { id: req.params.id } })
 
-      let setKey = 'todos' + req.params.id
+      let setKey = 'todos' + req.params.C
 
       await client.set(setKey, JSON.stringify(resp))
     }
@@ -33,20 +84,37 @@ const getfromCache = async (req, res, next) => {
   }
 }
 
-const getallrecords = async (req, res) => {
+const getAllrecords = async (req, res) => {
+  console.log('body: ', req.body)
+  let id = req.body.id ? req.body.id : ''
+  let animal_name = req.body.animal_name ? req.body.animal_name : ''
+  let Zoo_Name = req.body.Zoo_Name ? req.body.Zoo_Name : ''
+  let City_Name = req.body.City_Name ? req.body.City_Name : ''
   try {
-    let key = 'todos1' + '#'
+    let key = ``
+    key += id ? id : ''
+    key += animal_name ? animal_name : ''
+    key += Zoo_Name ? Zoo_Name : ''
+    key += City_Name ? City_Name : ''
+    console.log('Key: ', key)
     let resp
-    const value = await client.get(key)
+    const value = await client.get('6Ho')
     if (value) {
-      console.log('Data successfully fetched from cache....')
+      console.log('fetch from cache.')
 
       resp = JSON.parse(value)
+      res.send(resp)
       console.log('value1', value)
-    } else if (!resp) {
+    } else {
       console.log('fetch from DB.')
       resp = await Zeological_parks.findAll()
-      let setKey = 'todos1' + '#'
+      let setKey = ''
+      setKey += resp.id ? 'id:' + resp.id + '#' : ''
+      setKey += resp.animal_name ? 'animal_name:' + resp.animal_name + '#' : ''
+      setKey += resp.Zoo_Name ? 'Zoo_Name:' + resp.Zoo_Name + '#' : ''
+      setKey += resp.City_Name ? 'City_Name:' + resp.City_Name + '#' : ''
+      console.log('Key: ', setKey)
+      await client.flushAll()
       await client.set(setKey, JSON.stringify(resp), { EX: 30 })
     }
     res.status(200).json(resp)
@@ -57,7 +125,7 @@ const getallrecords = async (req, res) => {
 
 const insert = async (req, res) => {
   try {
-    let key = 'todos2' + req.body + '#'
+    let key = 'todos2' + req.body.animal_name + '#'
     let resp
     //let newValue;
     const value = await client.get(key)
@@ -71,7 +139,7 @@ const insert = async (req, res) => {
       console.log('fetch from DB.')
       resp = await Zeological_parks.create(req.body)
 
-      let setKey = 'todos2' + req.body + '#'
+      let setKey = 'todos2' + req.body.animal_name + '#'
       await client.set(setKey, JSON.stringify(resp))
     }
     res.send(resp)
@@ -152,7 +220,6 @@ const findMany = async (req, res) => {
       resp = await Zeological_parks.findAll({
         where: {
           City_Name: {
-            //[Op.like]: `${req.body.firstName}%`
             [Op.or]: [
               { [Op.like]: `%${req.body.City_Name}%` },
               { [Op.like]: `${req.body.City_Name}%` },
@@ -265,12 +332,14 @@ const getAll = async (req, res) => {
 }
 
 module.exports = {
+  PartialSearch,
   getfromCache,
-  getallrecords,
+  getAllrecords,
   getAll,
   insert,
   updateOne,
   deleteOne,
   findMany,
-  bulkInsert
+  bulkInsert,
+  getOneRecord
 }
